@@ -2,6 +2,13 @@
 
 [![Watch the video](https://img.youtube.com/vi/GxLoMquHynY/maxresdefault.jpg)](https://youtu.be/GxLoMquHynY)
 
+0. Install ollama app https://ollama.com/download
+   Then grab models
+   ```sh
+ollama pull mxbai-embed-large
+ollama pull llama3
+   ```
+   See also: https://github.com/ollama/ollama?tab=readme-ov-file#customize-a-model
 1. Get started by installing the requirements: `pip install -r requirements.txt`
 2. Make sure you have the models listed in config.ini. so for nomic-embed-text, run `ollama pull nomic-embed-text`. Update the config to show whatever models you want to use.
 3. Then run ChromaDB in a separate terminal: `chroma run --host localhost --port 8000 --path ../vectordb-stores/chromadb`

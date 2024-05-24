@@ -1,6 +1,9 @@
 beautifulsoup4==4.12.3
-chromadb==0.4.24
+# pip install chromaDB==0.5.0 --no-cache-dir --verbose --force-reinstall
+chromadb==0.5.0
 mattsollamatools==0.0.21
 ollama==0.1.8
+pysqlite3==0.5.2
+pysqlite3-binary==0.5.2.post3
 python_magic==0.4.27
 Requests==2.31.0
