@@ -21,6 +21,8 @@ def download_file(url):
         if not filename:
             filename = urlparse(url).geturl().replace('https://', '').replace('/', '-')
         filename = 'content/' + filename
+        if os.path.isdir("content") == False:
+          os.mkdir("content")
         with open(filename, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)

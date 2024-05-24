@@ -13,7 +13,7 @@ collection = chroma.get_or_create_collection(name="buildragwithpython", metadata
 
 embedmodel = getconfig()["embedmodel"]
 starttime = time.time()
-with open('sourcedocs.txt') as f:
+with open('sourcedocs.txt', 'r', encoding='utf-8') as f:
   lines = f.readlines()
   for filename in lines:
     text = readtext(filename)
