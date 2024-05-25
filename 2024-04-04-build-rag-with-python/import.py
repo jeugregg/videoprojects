@@ -17,12 +17,19 @@ with open('sourcedocs.txt', 'r', encoding='utf-8') as f:
   lines = f.readlines()
   for filename in lines:
     text = readtext(filename)
-    chunks = chunk_text_by_sentences(source_text=text, sentences_per_chunk=10, overlap=0)
+    chunks = chunk_text_by_sentences(source_text=text, sentences_per_chunk=2, overlap=0)
     print(f"with {len(chunks)} chunks")
     for index, chunk in enumerate(chunks):
       embed = ollama.embeddings(model=embedmodel, prompt=chunk)['embedding']
       print(".", end="", flush=True)
-      collection.add([filename+str(index)], [embed], documents=[chunk], metadatas={"source": filename})
+      filename = filename.replace("\n","")
+      curr_id = f"{filename} ({index})"
+      collection.add(
+        ids=[curr_id],
+        embeddings=[embed],
+        documents=[chunk],
+        metadatas={"source": filename}
+      )
     
 print("--- %s seconds ---" % (time.time() - starttime))
 
