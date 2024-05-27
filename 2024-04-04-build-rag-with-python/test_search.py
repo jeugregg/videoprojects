@@ -9,10 +9,12 @@ collection = chroma.get_or_create_collection("buildragwithpython")
 #query = "Will iPhone 16 bring notable changes to the iPhone lineup?"
 #query = "What did happen to the TSMC chip production lines?"
 #query = "What did happen in Taiwan about Apple Chip Production Lines?"
+
 query = "What did happen in Taiwan ?"
+
 queryembed = ollama.embeddings(model=embedmodel, prompt=query)['embedding']
 results = collection.query(query_embeddings=[queryembed], n_results=100)
-relevantdocs = results["documents"][0][0:11]
+relevantdocs = results["documents"][0][0:33]
 docs = "\n\n".join(relevantdocs)
 print("\n\n")
 print("LENGTH of DOCS : ", len(docs))
@@ -32,7 +34,13 @@ for k, elem in enumerate(zip(results["ids"][0], results["distances"][0])):
 stream = ollama.generate(model=mainmodel, prompt=modelquery, stream=True)
 print("RESPONSE : ")
 print("\n\n")
+answer_0 =""
 for chunk in stream:
     if chunk["response"]:
         print(chunk['response'], end='', flush=True)
+        answer_0 += chunk['response']
 
+print("TEST 0 ")
+# what did happen in taiwan ?
+# answer speak about an earthquake.
+assert answer_0.find("earthquake") != -1

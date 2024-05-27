@@ -28,7 +28,7 @@ def download_file(url):
                 f.write(chunk)
         return filename
       
-def readtext(path):
+def readtext(path, filter=None):
   path = path.rstrip()
   path = path.replace(' \n', '')
   path = path.replace('%0A', '')
@@ -50,7 +50,14 @@ def readtext(path):
   if filetype == 'text/html':
     with open(filename, 'rb') as f:
       soup = BeautifulSoup(f, 'html.parser')
-      text = soup.get_text()
+      if filter is not None:
+         element = soup.find(attrs={'id':filter})
+         if element is not None:
+           text = element.get_text()
+         else:
+           text = soup.get_text()
+      else: 
+        text = soup.get_text()
   
   if os.path.exists(filename) and filename.find('content/') > -1:
     os.remove(filename) 
