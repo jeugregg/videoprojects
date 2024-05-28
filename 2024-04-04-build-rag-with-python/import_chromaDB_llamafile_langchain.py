@@ -1,7 +1,6 @@
 '''
-Import DB with embeddings with ChromaDB + Ollama
-TODO : update ollama because it's not working : issue https://github.com/ollama/ollama/issues/4207 
-with update availabe on ollama
+Import DB with embeddings with ChromaDB + Llamafile on Langchain
+
 '''
 
 import ollama, chromadb, time
