@@ -1,6 +1,10 @@
 beautifulsoup4==4.12.3
-chromadb==0.4.24
+chromadb==0.5.0
 mattsollamatools==0.0.21
 ollama==0.1.8
 python_magic==0.4.27
 Requests==2.31.0
+langchain==0.2.1
+langchain-chroma==0.1.1
+langchain-community==0.2.1
+sentence_transformers==2.7.0
