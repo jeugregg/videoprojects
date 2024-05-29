@@ -9,7 +9,7 @@ from langchain_community.embeddings import LlamafileEmbeddings
 from utilities import readtext
 from mattsollamatools import chunk_text_by_sentences
 
-collectionname="buildragwithpython"
+collectionname = "buildragwithpython"
 llamafilename = "/Users/gregory/code/llamafile/mxbai-embed-large-v1-f16.llamafile"
 embedder = LlamafileEmbeddings()
 
