@@ -7,16 +7,23 @@ Test on Langchain : RAG + Query on PDF DB with :
 1)  Link to DB with embeddings with ChromaDB + Llamafile on Langchain
 2)  Search on DB about a query
 3)  Stuff documents as context and query Ollama LLM on Langchain
+
+TEST 1 : QA Chain (simple) 
+TEST 2 : LCEL Chain : LangChain Expression Language (chaine globale)
+TEST 3 : LLM only
+
 '''
 # import
 import chromadb
 from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.embeddings import LlamafileEmbeddings
 from langchain_community.llms import Ollama
-from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain_chroma import Chroma
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
 from utilities import getconfig
 
 # tools
@@ -40,6 +47,8 @@ vectorstore = Chroma(
 
 llm = Ollama(model=mainmodel)
 
+
+# TEST 1 : QA CHAIN
 # Prompt
 rag_prompt = PromptTemplate.from_template(
     '''
@@ -51,7 +60,7 @@ rag_prompt = PromptTemplate.from_template(
 )
 
 # Chain
-retriever = vectorstore.as_retriever()
+retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
 
 qa_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
@@ -61,21 +70,19 @@ qa_chain = (
 )
 
 
-# Test
+# REPONSE TEST 1: 
 
 question = "Quels sont les besoins dans le domaine des pratiques RH que la blockchain adresse ou pourrait adresser ?"
-results = qa_chain.invoke(question)
+results_1 = qa_chain.invoke(question)
 
-print(results)
+print(results_1)
 
+# TEST 2 : LCEL Chain : LangChain Expression Language
 
-
-# Utilisation des structures de Chain LCEL : LangChain Expression Language
+# Utilisation des structures de LCEL Chain : LangChain Expression Language
 
 print("\nTEST LCEL MODE : \n")
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
+
 
 prompt = ChatPromptTemplate.from_template(
     """
@@ -91,6 +98,15 @@ document_chain = create_stuff_documents_chain(llm, prompt)
 
 retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
+# REPONSE TEST 2: 
+results_2 = retrieval_chain.invoke({"input": question})
+print(results_2["answer"])
 
-response = retrieval_chain.invoke({"input": question})
-print(response["answer"])
+# REPONSE TEST 3: 
+print("\n\n REPONSE LLM only : \n")
+
+results_3 = llm.invoke("Quels sont les besoins dans le domaine des pratiques RH que la blockchain adresse ou pourrait adresser ?")
+
+print(results_3)
+
+print("END")
