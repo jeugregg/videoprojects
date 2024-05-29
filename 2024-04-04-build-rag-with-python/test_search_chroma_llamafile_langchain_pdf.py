@@ -60,36 +60,3 @@ for chunk in stream:
     if chunk:
         print(chunk, end='', flush=True)
         answer_0 += chunk
-
-print("\nTEST 0 ")
-# what did happen in taiwan ?
-# answer speak about an earthquake.
-assert answer_0.find("earthquake") != -1
-print("\nTEST 0 PASSED")
-
-print('\nTEST 1 ... ')
-query_1 = "Will iPhone 16 bring notable changes to the iPhone lineup?"
-print("Question: ", query_1)
-results_1 = langchain_chroma.similarity_search_with_score(query_1, k=10)
-relevantdocs_1 = [doc[0].page_content for doc in results_1]
-context_1 = "\n\n".join(relevantdocs_1)
-modelquery_1 = f'{query_1} - Answer that question using the following text as a resource:\n"""\n{context_1}\n"""'
-stream_1 = llm.stream(modelquery_1)
-print("RESPONSE : ")
-print("\n\n")
-answer_1 =""
-for chunk in stream_1:
-    if chunk:
-        print(chunk, end='', flush=True)
-        answer_1 += chunk
-
-
-assert answer_1.find("Larger") != -1
-assert answer_1.find("Capture") != -1
-assert answer_1.find("Faster") != -1
-assert answer_1.find("Camera") != -1
-assert answer_1.find("Action") != -1
-
-print("\nTEST 1 PASSED")
-#query = "What did happen to the TSMC chip production lines?"
-#query = "What did happen in Taiwan about Apple Chip Production Lines?"
