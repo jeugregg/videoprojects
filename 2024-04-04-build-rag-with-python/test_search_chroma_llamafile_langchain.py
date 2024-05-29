@@ -30,8 +30,6 @@ query = "What did happen in Taiwan ?"
 results = langchain_chroma.similarity_search_with_score(query, k=10)
 
 
-#queryembed = ollama.embeddings(model=embedmodel, prompt=query)['embedding']
-#results = collection.query(query_embeddings=[queryembed], n_results=100)
 relevantdocs = [doc[0].page_content for doc in results]
 context = "\n\n".join(relevantdocs)
 print("\n\n")
