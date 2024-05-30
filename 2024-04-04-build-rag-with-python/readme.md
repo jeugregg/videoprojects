@@ -24,7 +24,10 @@
 10. Test search with augmented context with relevant docs : 
     - with Llamafile : `python3 test_search_chroma_llamafile_langchain.py`
     - with Libertai  : `python3 test_search_chroma_libertai_langchain.py`
-11. Perform a search : `python3 search.py <yoursearch>` TO BE UPDATED
+11. Test search with augmented context with relevant docs in LCEL mode (cleaner):
+    - with Llamafile : `python3 test_search_lcel_llamafile_langchain.py`
+    - with Libertai  : `python3 test_search_lcel_libertai_langchain.py`
+
 
 
 Some folks on Windows seem to have issues with installing this. I guess the install package names are different there. Try `pip install python-magic-bin` to get the magic stuff working.
