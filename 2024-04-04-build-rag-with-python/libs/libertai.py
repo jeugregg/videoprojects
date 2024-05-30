@@ -1,3 +1,9 @@
+"""
+Libertai LLM model adaptation for LangChain
+
+"""
+
+
 from typing import Any, List, Mapping, Optional
 
 from langchain.callbacks.manager import CallbackManagerForLLMRun
@@ -80,7 +86,13 @@ logger = logging.getLogger(__name__)
 
 
 class LibertaiEmbeddings(BaseModel, Embeddings):
-    """Llamafile lets you distribute and run large language models with a
+    """
+    Libertai Embeddings from : 
+    - default model : nomic-embed-text-v1.5.f16.gguf
+    - and Llamafile class from langchain : 
+        - https://github.com/langchain-ai/langchain/blob/master/libs/community/langchain_community/embeddings/llamafile.py
+
+    Llamafile lets you distribute and run large language models with a
     single file.
 
     To get started, see: https://github.com/Mozilla-Ocho/llamafile
@@ -110,6 +122,7 @@ class LibertaiEmbeddings(BaseModel, Embeddings):
 
     """
 
+    # default model : nomic-embed-text-v1.5.f16.gguf
     base_url: str = "https://curated.aleph.cloud/vm/ee1b2a8e5bd645447739d8b234ef495c9a2b4d0b98317d510a3ccf822808ebe5"
     """Base url where the llamafile server is listening."""
 

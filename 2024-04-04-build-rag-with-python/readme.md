@@ -17,3 +17,8 @@
 
 
 Some folks on Windows seem to have issues with installing this. I guess the install package names are different there. Try `pip install python-magic-bin` to get the magic stuff working.
+
+
+# Test Embedding with Libertai
+After installed all steps above except maybe LlamaFile part (steps 4-6),
+1. Test embedding with nomic model on Libertai : `test_emb_libertai.py`
