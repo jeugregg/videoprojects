@@ -1,23 +1,25 @@
 '''
 Test on Langchain : RAG + Query with :
     - DB: ChromaDB
-    - embbedding: Llamafile 
+    - embbedding: Libertai 
     - LLM: Ollama
 '''
 # import
 import chromadb
-from langchain_community.embeddings import LlamafileEmbeddings
+from libs.libertai import LibertaiEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.llms import Ollama
 from utilities import getconfig
 
 # definitions
-embedmodel = getconfig()["embedmodel"]
 mainmodel = getconfig()["mainmodel"]
-collectionname = "buildragwithpython"
+collectionname = "buildragwithpython_libertai"
+
+# connect to ChromaDB running server
 chroma = chromadb.HttpClient(host="localhost", port=8000)
-#collection = chroma.get_or_create_collection(collectionname)
-embedder = LlamafileEmbeddings(model=embedmodel)
+# connect to libertai embedding endpoint
+embedder = LibertaiEmbeddings()
+# create chain for embedded query on ChromaDB
 langchain_chroma = Chroma(
     client=chroma,
     collection_name=collectionname,
@@ -25,12 +27,19 @@ langchain_chroma = Chroma(
 )
 print("There are", langchain_chroma._collection.count(), "in the collection")
 
-
+# request 
 query = "What did happen in Taiwan ?"
-
 results = langchain_chroma.similarity_search_with_score(query, k=10)
+# show relevent docs
+sum_len = 0
+for k, elem in enumerate(results):
+    length_curr = len(elem[0].page_content)
+    distance = elem[1]
+    sum_len+=length_curr
+    print(f'k:{k} DISTANCE:{distance} length:{length_curr}/{sum_len} ID:{elem[0].metadata["source"]}')
 
 
+# format concat 10 relevant docs as context to the request :
 relevantdocs = [doc[0].page_content for doc in results]
 context = "\n\n".join(relevantdocs)
 print("\n\n")
@@ -41,30 +50,25 @@ print("\n\n model query:")
 print(modelquery)
 print("\n\n")
 print("\n\n")
-sum_len = 0
-for k, elem in enumerate(results):
-    length_curr = len(elem[0].page_content)
-    distance = elem[1]
-    sum_len+=length_curr
-    print(f'k:{k} DISTANCE:{distance} length:{length_curr}/{sum_len} ID:{elem[0].metadata["source"]}')
-
-llm = Ollama(model=mainmodel)
-stream = llm.stream(modelquery)
-
 print("RESPONSE : ")
 print("\n\n")
+# ask LLM model:
+llm = Ollama(model=mainmodel)
+stream = llm.stream(modelquery)
 answer_0 =""
 for chunk in stream:
     if chunk:
         print(chunk, end='', flush=True)
         answer_0 += chunk
 
+# TEST 0 : 
 print("\nTEST 0 ")
 # what did happen in taiwan ?
 # answer speak about an earthquake.
 assert answer_0.find("earthquake") != -1
 print("\nTEST 0 PASSED")
 
+# TEST 1 : 
 print('\nTEST 1 ... ')
 query_1 = "Will iPhone 16 bring notable changes to the iPhone lineup?"
 print("Question: ", query_1)
@@ -80,7 +84,6 @@ for chunk in stream_1:
     if chunk:
         print(chunk, end='', flush=True)
         answer_1 += chunk
-
 
 assert answer_1.find("Larger") != -1
 assert answer_1.find("Capture") != -1
