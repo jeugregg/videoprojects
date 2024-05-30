@@ -12,6 +12,7 @@ TEST 1 : QA Chain (simple)
 TEST 2 : LCEL Chain : LangChain Expression Language (chaine globale)
 TEST 3 : LLM only
 
+https://python.langchain.com/v0.1/docs/get_started/quickstart/#retrieval-chain
 '''
 # import
 import chromadb
