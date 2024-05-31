@@ -8,6 +8,9 @@
 3. Create an ollama llama3 coherent for LLM with a modelfile : `ollama create llama3-coherent -f ./ModelFileLLM`
 4. Then run Vector DB ChromaDB in a separate terminal:
     - `chroma run --host localhost --port 8000 --path ../vectordb-stores/chromadb`
+   or
+    - `docker run -p 8000:8000 -v vectordb-stores:/app/vectordb-stores chroma-app`
+      (`# docker run -it chroma-app -c bash`)
 5. Edit the list of docs in `sourcedocs.txt`
 6. For embedding docs, Ollama is buggy for embeddings in v0.1.8 so a workaround : 
     - you can use LlamFile model:
