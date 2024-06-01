@@ -33,7 +33,7 @@ starttime = time.time()
 with open('sourcedocs.txt', 'r', encoding='utf-8') as f:
     lines = f.readlines()
     for filename in lines:
-        text = readtext(filename.strip(), filter="maincontent")
+        text = readtext(filename.strip(), filter_id="maincontent")
         chunks = chunk_text_by_sentences(source_text=text, sentences_per_chunk=2, overlap=0)
         print(f"with {len(chunks)} chunks")
         for index, chunk in enumerate(chunks):
