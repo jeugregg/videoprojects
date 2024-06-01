@@ -8,6 +8,7 @@
 3. Create an ollama llama3 coherent for LLM with a modelfile : `ollama create llama3-coherent -f ./ModelFileLLM`
 4. Then run Vector DB ChromaDB in a separate terminal:
     - `chroma run --host localhost --port 8000 --path ../vectordb-stores/chromadb`
+    - TIPS : if error model validation when importing docs model validation re-install pydantic 2.7.2 seems ok.
    or
     - `docker run -p 8000:8000 -v vectordb-stores:/app/vectordb-stores chroma-app`
       (`# docker run -it chroma-app -c bash`)
@@ -19,7 +20,7 @@
         - Make executable: `chmod +x "/somewhere/mxbai-embed-large-v1-f16.llamafile”`
         - Run: `/somewhere/mxbai-embed-large-v1-f16.llamafile --server --nobrowser --embedding`
         - Update the config.ini to show whatever models you want to use.
-        - import docs into DB : run `python3 import_chromaDB_llamafile_langchain.py`
+        - import docs into DB : run `python3 import_lcel_chromaDB_llamafile_langchain.py`
     - OR use libertai model online:
         - just use libertai libs (no need to download anything else)
         - import docs into DB : run `python3 import_chromaDB_libertai_langchain.py`
