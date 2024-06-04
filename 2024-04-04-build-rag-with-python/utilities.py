@@ -1,4 +1,4 @@
-import re, os, requests, magic, ollama, string, configparser
+import re, os, requests, magic, configparser
 from urllib.parse import unquote, urlparse
 from bs4 import BeautifulSoup
 
@@ -29,6 +29,9 @@ def download_file(url):
         return filename
       
 def readtext(path, filter_id=None):
+    """Read a local text file or remote web html and return its text content.
+    For HTML files, you can filter on html tag id for best importation
+    """
     path = path.rstrip()
     path = path.replace(' \n', '')
     path = path.replace('%0A', '')
@@ -70,7 +73,8 @@ def getconfig():
 
 
 def list_docs_parser(list_filename):
-    # read file list 
+    # read a file contains a list of files 
+    # return a list of urls or paths strings
     file_list = []
     with open(list_filename, 'r', encoding='utf-8') as f:
         for line in f:
