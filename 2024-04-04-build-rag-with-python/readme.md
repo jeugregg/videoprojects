@@ -3,18 +3,23 @@
 [![Watch the video](https://img.youtube.com/vi/GxLoMquHynY/maxresdefault.jpg)](https://youtu.be/GxLoMquHynY)
 
 1. Get started by installing the requirements: `pip install -r requirements.txt`
-2. Make sure you have the models listed in config.ini. so for llama3 8B, run `ollama pull llama3`
+2. Make sure you have the models listed in config.ini. so for llama3 8B, run `ollama pull llama3` or use tools (tools_ollama.py)
+    - Pre-requisite : install ollama : https://www.ollama.com/
     - Update the config.ini to show whatever models you want to use.
 3. Create an ollama llama3 coherent for LLM with a modelfile : `ollama create llama3-coherent -f ./ModelFileLLM`
+    OR use launch_server_ollama function (cf. `test_import_html_bc_tx.py`)
 4. Then run Vector DB ChromaDB in a separate terminal:
     - `chroma run --host localhost --port 8000 --path ../vectordb-stores/chromadb`
     - TIPS : if error model validation when importing docs model validation re-install pydantic 2.7.2 seems ok.
+    or use chromadb as persistent db directly in your python code :
+     `client = chromadb.PersistentClient(path=relative_path_db)`
    or
     - `docker run -p 8000:8000 -v vectordb-stores:/app/vectordb-stores chroma-app`
       (`# docker run -it chroma-app -c bash`)
 5. Edit the list of docs in `sourcedocs.txt`
 6. For embedding docs, Ollama is buggy for embeddings in v0.1.8 so a workaround : 
-    - you can use LlamFile model:
+    - use `launch_llamafile` function from `tools_llamafile.py`
+    - OR you can use LlamaFile model:
         - Download llamafile for embedding: 
             - https://huggingface.co/Mozilla/mxbai-embed-large-v1-llamafile/resolve/main/mxbai-embed-large-v1-f16.llamafile?download=true
         - Make executable: `chmod +x "/somewhere/mxbai-embed-large-v1-f16.llamafile”`

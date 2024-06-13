@@ -15,12 +15,13 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from utilities import getconfig
 
 # definitions
+config = "emb-llamafile"
 embedmodel = getconfig()["embedmodel"]
 mainmodel = getconfig()["mainmodel"]
 collectionname = "buildragwithpython"
 
 # Embedding model
-embedder = LlamafileEmbeddings(model=embedmodel)
+embedder = LlamafileEmbeddings()
 # Vector DB
 chroma = chromadb.HttpClient(host="localhost", port=8000)
 vectorstore = Chroma(

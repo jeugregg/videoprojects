@@ -14,9 +14,9 @@ here we use ChromaDB + Llamafile + Langchain
 - Used different methods to import an HTML file
 
 """
-import os
+import os, time
 from langchain_community.document_loaders import WebBaseLoader
-from utilities import download_file, get_filename_from_cd, getconfig
+from utilities import getconfig
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.document_loaders import TextLoader
@@ -43,10 +43,16 @@ from langchain_community.embeddings import LlamafileEmbeddings
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field, validator
 from typing import List
+from libs.tools_ollama import launch_server_ollama
+from libs.tools_llamafile import launch_llamafile
 
 # definitions
-embedmodel = getconfig()["embedmodel"]
-mainmodel = getconfig()["mainmodel"]
+config = "emb-llamafile"
+mainmodel = launch_server_ollama(config=config)
+launch_llamafile(config=config)
+#embedmodel = getconfig()["embedmodel"]
+#mainmodel = getconfig()["mainmodel"]
+relative_path_db = getconfig()["dbpath"] #"../vectordb-stores/chromadb"
 collectionname = "tx_test"
 url_test = "https://polygonscan.com/tx/0x99e3c197172b967eb4215249be50034a1696423a9ae805438ae217a501d86aa9"
 file_path_test = "content/file_test_polygonscan.html" # local download of remote  HTML file
@@ -124,18 +130,26 @@ all_splits = text_splitter.split_documents(docs)
 
 # load it into Chroma if not already done
 # connect to Llamafile embedding
-embedder = LlamafileEmbeddings(model=embedmodel)
-chroma = chromadb.HttpClient(host="localhost", port=8000)
+embedder = LlamafileEmbeddings()
+
+# Connect to VectorStore
+#client = chromadb.HttpClient(host="localhost", port=8000) # TO SERVER (TEST 04 : 85s)
+client = chromadb.PersistentClient(path=relative_path_db) # TO LOCAL PERSISTENT DB (TEST 04 : 85s same result)
+
+if any(collection.name == collectionname for collection in client.list_collections()):
+    print("docs already in collection")
+    mode_add = False
+else:
+    mode_add = True
+
 # langchain chroma connection
 vectorstore = Chroma(
-    client=chroma,
+    client=client,
     collection_name=collectionname,
     embedding_function=embedder,
 )
-if any(collection.name == collectionname for collection in chroma.list_collections()):
-    print("docs already in collection")
-    #collection = chroma.get_or_create_collection(name=collectionname, metadata={"hnsw:space": "cosine"})
-else:
+
+if mode_add:
     vectorstore.add_documents(all_splits) # VERY LONG ? 
 # query it
 #query = "Which tokens were transfered in this transaction?"
@@ -187,7 +201,7 @@ for k, doc in enumerate(results["context"]):
     if doc.page_content.find("ALPHA") != -1:
         print("FOUND ALPHA in context : ", k)
 
-# TEST 3 : With output format on last 2 context found : json
+# TEST 3 : With output format + 1 example and the last 2 context found : json
 print("\nTEST 3 : With output format on 2 context found and an example : \n")
 # prepare an example :
 results_old = results
@@ -213,20 +227,51 @@ for token, address_token in dict_tokens_to_find.items():
 
 # Define your desired data structure.
 class TokenData(BaseModel):
-    symbol: List[str] = Field(description="symbol of the token")
-    address: List[str] = Field(description="address of the token")
-
+    symbol: str = Field(description="symbol of the token found")
+    address: str = Field(description="address of the token found")
     # You can add custom validation logic easily with Pydantic.
     @validator("address")
     def address_start_with_0x(cls, field):
         """Check address format"""
-        if field[0][:2] != "0x":
+        if field[:2] != "0x":
             raise ValueError("Badly formed address!")
         return field
 
+class ListTokenData(BaseModel):
+    tokens: List[TokenData] = Field(description="list of tokens found")
+
 # Set up a parser + inject instructions into the prompt template.
-parser = PydanticOutputParser(pydantic_object=TokenData)
+# prompt without example
+query_2 = f"Find tokens ticker symbol and address that were exchanged with this wallet '{address_test}' ?"
+parser = PydanticOutputParser(pydantic_object=ListTokenData)
 prompt_2 = PromptTemplate(
+    template="""Answer the following question only based on the context (several pieces of a HTML file) and instructions provided.
+        <context>
+        {context}
+        </context>
+        <instructions>
+        {format_instructions}
+        </instructions>
+        <question>
+         {query}
+         Don't take wallet address of sender (From) or of receiver (To), but only token address.
+         A ticker symbol of a token is composed of 3 to 5 characters and use exclusively capital letters of the Latin alphabet (A-Z).
+         An address of a token is composed of 42 characters and start with 0x
+         A token have only one address, so output only one address per token.
+         As answer, for each token found, can you give his ticker symbol and his address. 
+         Do not explain how you have done.
+        </question>
+        """,
+    input_variables=["query", "context"],
+    partial_variables={"format_instructions": parser.get_format_instructions()},
+)
+dict_param_prompt_2 = {
+    "context": results_old["context"][-2].page_content + results_old["context"][-1].page_content,
+    "query": query_2,
+}
+
+# prompt with example
+'''prompt_2 = PromptTemplate(
     template="""Answer the following question only based on the context (parts of a HTML file) and instructions provided.
         To help you, use the given example but not extract any data from it as output.
         <context>
@@ -243,22 +288,25 @@ prompt_2 = PromptTemplate(
         </instructions>
         <question>
          {query}
-         As answer I need only short symbols (and not the long names) and addresses of token found. Do not explain how you have done.
+         
+         As answer I need only short symbols of token like (and not the long names) and addresses of token found. Do not explain how you have done.
         </question>
         """,
     input_variables=["query", "example","output_example","context"],
     partial_variables={"format_instructions": parser.get_format_instructions()},
 )
-
-dict_param_prompt = {
+dict_param_prompt_2 = {
     "context": results_old["context"][-2].page_content + results_old["context"][-1].page_content,
     "example": example,
     "output_example": output_example,
     "query": query,
-}
+}'''
 # And a query intended to prompt a language model to populate the data structure.
+#prompt_and_model = prompt_ex | llm
+#output = prompt_and_model.invoke(dict_param_prompt_ex)
+
 prompt_and_model = prompt_2 | llm
-output = prompt_and_model.invoke(dict_param_prompt)
+output = prompt_and_model.invoke(dict_param_prompt_2)
 print("\noutput to parser:\n", output)
 res = parser.invoke(output)
 print("\nAnswer parsed : \n")
@@ -272,7 +320,7 @@ print("\nTEST 3 END")
 
 # TEST 4 : With output format on all context found : json
 print("\nTEST 4 : With output format on all context found and an example : \n")
-
+starttime = time.time()
 '''class DictToken(dict):
     """
     A dict that can be updated without mutating the original dict.
@@ -289,25 +337,26 @@ print("\nTEST 4 : With output format on all context found and an example : \n")
 dict_token_found = {}
 # loop over contexts
 for k, doc in enumerate(results["context"]):
-    print('Context n# ', k)
+    print('\nContext n# ', k)
     # find token symbol and address
-    dict_param_prompt["context"] = doc.page_content
-    output = prompt_and_model.invoke(dict_param_prompt)
-    print("\noutput to parser:\n", output)
+    dict_param_prompt_2["context"] = doc.page_content
+    output = prompt_and_model.invoke(dict_param_prompt_2)
+    print("1-Output to parser:\n", output)
     try:
         res = parser.invoke(output)
-        print("\nAnswer parsed : \n")
+        print("2-Answer parsed:\n")
         print(res)
-        for symbol, address in zip(res.symbol, res.address):
-            if symbol not in dict_token_found.keys():
-                dict_token_found[symbol] = address
+        for token in res.tokens:
+            if token.symbol not in dict_token_found:
+                dict_token_found[token.symbol] = token.address
     except:
-        print("NO MORE token found ?")
-
+        print("2-NO MORE token found ?")
+print("--- %s seconds ---" % (time.time() - starttime))
 print(dict_token_found)
+
 print("\nTEST 4 END")
 # test with Unstructured
-# TODO
+#TODO
 '''print("Loading UnstructuredHTMLLoader")
 loader = UnstructuredHTMLLoader(
     file_path_test,

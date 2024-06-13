@@ -1,7 +1,7 @@
 beautifulsoup4==4.12.3
 chromadb==0.5.0
 mattsollamatools==0.0.21
-ollama==0.1.8
+ollama==0.2.1
 python_magic==0.4.27
 Requests==2.31.0
 langchain==0.2.1
@@ -12,3 +12,4 @@ pypdf==4.2.0
 pydantic==2.7.2
 selenium==4.17.2
 webdriver_manager==4.0.1
+wget==3.2

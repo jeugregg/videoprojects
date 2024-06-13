@@ -5,16 +5,21 @@ https://www.mixedbread.ai/blog/mxbai-embed-large-v1
 '''
 
 # import
+import ollama
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.embeddings import LlamafileEmbeddings
 from sentence_transformers.util import cos_sim
 import numpy as np
 from numpy.testing import assert_almost_equal
 from utilities import getconfig
-
+from libs.tools_llamafile import launch_llamafile
 # definitions
 embedmodel = getconfig()["embedmodel"]
+ollama.pull(embedmodel)
 ollama_emb = OllamaEmbeddings(model=embedmodel)
+
+
+
 llamafilename = "/Users/gregory/code/llamafile/mxbai-embed-large-v1-f16.llamafile"
 
 query = 'Represent this sentence for searching relevant passages: A man is eating a piece of bread'
@@ -41,6 +46,7 @@ except AssertionError:
     print("TEST 1 : OLLAMA FAILED.")
 
 print("TEST 2 : llamafile...")
+launch_llamafile()
 embedder = LlamafileEmbeddings()
 r_2 = embedder.embed_documents(docs)
 similarities_2 = cos_sim(r_2[0], r_2[1:])

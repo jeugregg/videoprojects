@@ -66,10 +66,10 @@ def readtext(path, filter_id=None):
       
     return text
 
-def getconfig():
+def getconfig(id_cfg="main"):
     config = configparser.ConfigParser()
     config.read('config.ini')
-    return dict(config.items("main"))
+    return dict(config.items(id_cfg))
 
 
 def list_docs_parser(list_filename):
