@@ -1,5 +1,8 @@
 '''
 Helper function for llamafile
+launch : 
+- check if file exists, if not, download it, 
+- check if process exist, kill it, then re-launch it
 '''
 # import
 import os

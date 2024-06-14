@@ -48,11 +48,8 @@ from libs.tools_llamafile import launch_llamafile
 
 # definitions
 config = "emb-llamafile"
-mainmodel = launch_server_ollama(config=config)
-launch_llamafile(config=config)
-#embedmodel = getconfig()["embedmodel"]
-#mainmodel = getconfig()["mainmodel"]
-relative_path_db = getconfig()["dbpath"] #"../vectordb-stores/chromadb"
+pathdata = getconfig(config)["pathdata"]
+relative_path_db = getconfig(config)["dbpath"]
 collectionname = "tx_test"
 url_test = "https://polygonscan.com/tx/0x99e3c197172b967eb4215249be50034a1696423a9ae805438ae217a501d86aa9"
 file_path_test = "content/file_test_polygonscan.html" # local download of remote  HTML file
@@ -64,6 +61,12 @@ dict_tokens_to_find = {
     "KEK": "0x42e5e06ef5b90fe15f853f59299fc96259209c5c",
     "ALPHA": "0x6a3E7C3c6EF65Ee26975b12293cA1AAD7e1dAeD2",
 }
+
+# Start Ollama model : actually, check if it exists or pull it and prepare it 
+# cf. config.ini
+mainmodel = launch_server_ollama(config=config)
+# Start embedding LLamafile model
+launch_llamafile(config=config)
 
 # Web text directly : NOK : html tag are missing so understanding is difficult (bs get_text is used)
 '''loader = WebBaseLoader(url_test)
@@ -89,14 +92,12 @@ docs = loader.load()'''
 
 
 # Download with BeautyfulSoup
-FOLDER_RAW = "content/"
-if not os.path.isdir(FOLDER_RAW):
-    os.mkdir(FOLDER_RAW)
+if not os.path.isdir(pathdata):
+    os.mkdir(pathdata)
 
 if not os.path.isfile(file_path_test):
     print("Loading url : ", url_test)
     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-
     # get html content from chrome driver
     driver.get(url_test)
     # parse final content
@@ -355,6 +356,7 @@ print("--- %s seconds ---" % (time.time() - starttime))
 print(dict_token_found)
 
 print("\nTEST 4 END")
+
 # test with Unstructured
 #TODO
 '''print("Loading UnstructuredHTMLLoader")

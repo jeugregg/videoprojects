@@ -1,11 +1,13 @@
 '''
 Helper function for ollama
+launch : 
+- check if model exists, if not, download it, 
+- prepare it (change parameters)
 '''
 import ollama
 from utilities import getconfig
 
 CONFIG = "main"
-
 MDL = getconfig(CONFIG)["mainmodel"] #mainmodel=llama3
 MDL_NAME = getconfig(CONFIG)["mainmodel_name"]
 TEMPERATURE = getconfig(CONFIG)["temperature"]
