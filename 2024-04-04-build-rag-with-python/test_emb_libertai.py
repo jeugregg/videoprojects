@@ -24,9 +24,6 @@ docs = [
 print("\n\n TEST 1 : embbding docs : \n")
 r_1 = embedder.embed_documents(docs)
 
-
-
-
 # Calculate cosine similarity
 similarities = cos_sim(r_1[0], r_1[1:])
 print('TEST 1 : LIBERTAI... ')
