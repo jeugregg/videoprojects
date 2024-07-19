@@ -1,5 +1,5 @@
 '''
-Test on Langchain : Simple Embedding with Langchain + Ollama using embed_documents
+Test on Langchain : Simple Embedding with Langchain + Ollama using query embedding
 Compare to result from creators of mxbai-embed-large-v1
 https://www.mixedbread.ai/blog/mxbai-embed-large-v1
 '''
@@ -10,7 +10,7 @@ from sentence_transformers.util import cos_sim
 import numpy as np
 from numpy.testing import assert_almost_equal
 # definitions
-ollama_emb = OllamaEmbeddings(model="mxbai-embed-large", embed_instruction="")
+ollama_emb = OllamaEmbeddings(model="mxbai-embed-large", query_instruction="")
 
 # test on ollama
 query = "Represent this sentence for searching relevant passages: A man is eating a piece of bread"
@@ -23,7 +23,8 @@ docs = [
     "A man is riding a horse.",
 ]
 
-r_1 = ollama_emb.embed_documents(docs)
+#r_1 = ollama_emb.embed_documents(docs)
+r_1 = [ollama_emb.embed_query(doc) for doc in docs]
 
 # Calculate cosine similarity
 similarities = cos_sim(r_1[0], r_1[1:])
