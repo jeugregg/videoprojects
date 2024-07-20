@@ -16,14 +16,16 @@ from utilities import getconfig
 
 # definitions
 config = "emb-llamafile"
-embedmodel = getconfig()["embedmodel"]
-mainmodel = getconfig()["mainmodel"]
+embedmodel = getconfig(config)["embedmodel"]
+mainmodel = getconfig(config)["mainmodel"]
 collectionname = "buildragwithpython"
-
+pathdata = getconfig(config)["pathdata"]
+relative_path_db = getconfig(config)["dbpath"]
 # Embedding model
 embedder = LlamafileEmbeddings()
 # Vector DB
-chroma = chromadb.HttpClient(host="localhost", port=8000)
+
+chroma = chromadb.PersistentClient(path=relative_path_db)
 vectorstore = Chroma(
     client=chroma,
     collection_name=collectionname,

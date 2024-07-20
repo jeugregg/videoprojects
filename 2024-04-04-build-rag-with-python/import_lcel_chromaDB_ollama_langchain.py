@@ -1,31 +1,25 @@
 '''
-Import DB with embeddings with ChromaDB + Llamafile on Langchain
-- pre requisites : 
-  - Llamafile server running locally
-  - chromaDB server running locally
+Import DB with embeddings with ChromaDB + Ollama on Langchain
+
 '''
 import chromadb
 from langchain_chroma import Chroma
-from langchain_community.embeddings import LlamafileEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_text_splitters import Language
 from libs.documentloaders import CustomDocumentLoader
 from utilities import getconfig
-from libs.tools_llamafile import launch_llamafile
 
 # definitions
-config = "emb-llamafile"
 collectionname = "buildragwithpython"
-pathdata = getconfig(config)["pathdata"]
-relative_path_db = getconfig(config)["dbpath"]
-
+embedmodel = getconfig()["embedmodel"]
 path_file_list = 'sourcedocs.txt'
+pathdata = getconfig()["pathdata"]
+relative_path_db = getconfig()["dbpath"]
 # connect to Llamafile embedding
-# Start embedding LLamafile model
-launch_llamafile(config=config)
-embedder = LlamafileEmbeddings()
+embedder = OllamaEmbeddings(model=embedmodel, embed_instruction="")
 
 # connect to chroma
+#chroma = chromadb.HttpClient(host="localhost", port=8000)
 chroma = chromadb.PersistentClient(path=relative_path_db)
 print(chroma.list_collections())
 # prepare collection : delete if exist to rebluid it
@@ -46,13 +40,8 @@ loader = CustomDocumentLoader(path_file_list)
 docs = loader.load()
 
 # split text
-text_splitter = RecursiveCharacterTextSplitter.from_language(
-    language=Language.HTML, chunk_size=1000, chunk_overlap=0
-)
-#text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=0)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=0)
 all_splits = text_splitter.split_documents(docs)
-
-
 
 # load it into Chroma
 langchain_chroma.add_documents(all_splits)

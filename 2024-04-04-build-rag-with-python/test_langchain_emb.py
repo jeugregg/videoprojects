@@ -18,7 +18,7 @@ from libs.tools_llamafile import launch_llamafile
 embedmodel = getconfig()["embedmodel"]
 print("Tested model embedded: ",  embedmodel)
 ollama.pull(embedmodel)
-ollama_emb = OllamaEmbeddings(model=embedmodel)
+ollama_emb = OllamaEmbeddings(model=embedmodel, embed_instruction="")
 
 llamafilename = getconfig("emb-llamafile")["embedmodel"]
 pathdata = getconfig("emb-llamafile")["pathdata"]
