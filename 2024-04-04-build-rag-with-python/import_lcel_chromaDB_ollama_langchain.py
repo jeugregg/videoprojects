@@ -6,6 +6,7 @@ import chromadb
 from langchain_chroma import Chroma
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import Language
 from libs.documentloaders import CustomDocumentLoader
 from utilities import getconfig
 
@@ -40,7 +41,10 @@ loader = CustomDocumentLoader(path_file_list)
 docs = loader.load()
 
 # split text
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=0)
+#text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=0)
+text_splitter = RecursiveCharacterTextSplitter.from_language(
+    language=Language.HTML, chunk_size=1000, chunk_overlap=0
+)
 all_splits = text_splitter.split_documents(docs)
 
 # load it into Chroma
