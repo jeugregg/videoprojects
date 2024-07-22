@@ -23,7 +23,12 @@ relative_path_db = getconfig(config)["dbpath"]
 chroma = chromadb.PersistentClient(path=relative_path_db)
 collection = chroma.get_or_create_collection(collectionname)
 # load embedding mdl
-ollama_emb = OllamaEmbeddings(model=embedmodel)
+#embedder = OllamaEmbeddings(model=embedmodel)
+embedder = OllamaEmbeddings(
+    model=embedmodel,
+    embed_instruction="",
+    query_instruction="Represent this sentence for searching relevant passages: ",
+)
 # load llm mdl
 mainmodel = launch_server_ollama(config=config)
 llm = Ollama(model=mainmodel, num_ctx=8000)
@@ -31,7 +36,7 @@ llm = Ollama(model=mainmodel, num_ctx=8000)
 langchain_chroma = Chroma(
     client=chroma,
     collection_name="buildragwithpython",
-    embedding_function=ollama_emb,
+    embedding_function=embedder,
 )
 print("There are", langchain_chroma._collection.count(), "in the collection")
 
@@ -76,10 +81,10 @@ print("\nTEST 0 PASSED")
 print('\nTEST 1 ... ')
 query_1 = "Will iPhone 16 bring notable changes to the iPhone lineup?"
 print("Question: ", query_1)
-results_1 = langchain_chroma.similarity_search_with_score(query_1, k=5)
+results_1 = langchain_chroma.similarity_search_with_score(query_1, k=6)
 relevantdocs_1 = [doc[0].page_content for doc in results_1]
 context_1 = "\n\n".join(relevantdocs_1)
-modelquery_1 = f'{query_1} - Answer that question using the following text as a resource:\n"""\n{context_1}\n"""'
+modelquery_1 = f'{query_1} - Answer that question in minimum of 5 bullets  and using the following text as a resource:\n"""\n{context_1}\n"""'
 print("\n\nMODEL QUERY 1: ")
 print(modelquery_1)
 print("\nmodel query size: ", len(modelquery_1))

@@ -17,7 +17,11 @@ path_file_list = 'sourcedocs.txt'
 pathdata = getconfig()["pathdata"]
 relative_path_db = getconfig()["dbpath"]
 # connect to Llamafile embedding
-embedder = OllamaEmbeddings(model=embedmodel, embed_instruction="")
+embedder = OllamaEmbeddings(
+    model=embedmodel,
+    embed_instruction="",
+    query_instruction="Represent this sentence for searching relevant passages: ",
+)
 
 # connect to chroma
 #chroma = chromadb.HttpClient(host="localhost", port=8000)

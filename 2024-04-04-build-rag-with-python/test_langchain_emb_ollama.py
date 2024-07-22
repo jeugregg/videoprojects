@@ -2,6 +2,7 @@
 Test on Langchain : Simple Embedding with Langchain + Ollama using embed_documents
 Compare to result from creators of mxbai-embed-large-v1
 https://www.mixedbread.ai/blog/mxbai-embed-large-v1
+# TODO : need to seperature query and embedding docs to have 2 different prompts
 '''
 
 # import
@@ -10,7 +11,11 @@ from sentence_transformers.util import cos_sim
 import numpy as np
 from numpy.testing import assert_almost_equal
 # definitions
-ollama_emb = OllamaEmbeddings(model="mxbai-embed-large", embed_instruction="")
+ollama_emb = OllamaEmbeddings(
+    model="mxbai-embed-large",
+    query_instruction="",
+    embed_instruction="",
+)
 
 # test on ollama
 query = "Represent this sentence for searching relevant passages: A man is eating a piece of bread"

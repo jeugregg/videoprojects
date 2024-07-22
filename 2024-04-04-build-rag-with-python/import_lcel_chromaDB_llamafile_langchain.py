@@ -23,8 +23,10 @@ path_file_list = 'sourcedocs.txt'
 # connect to Llamafile embedding
 # Start embedding LLamafile model
 launch_llamafile(config=config)
-embedder = LlamafileEmbeddings()
-
+embedder = LlamafileEmbeddings(
+    embed_instruction="",
+    query_instruction="Represent this sentence for searching relevant passages: ",
+)
 # connect to chroma
 chroma = chromadb.PersistentClient(path=relative_path_db)
 print(chroma.list_collections())
