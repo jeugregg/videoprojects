@@ -4,6 +4,7 @@ Test on Langchain : RAG + Query with :
     - embbedding: Llamafile 
     - LLM: Ollama
 '''
+
 # import
 import chromadb
 from langchain_community.embeddings import LlamafileEmbeddings
@@ -12,18 +13,22 @@ from langchain_community.llms import Ollama
 from utilities import getconfig
 from libs.tools_llamafile import launch_llamafile
 from libs.tools_ollama import launch_server_ollama
+
 # definitions
 config = "emb-llamafile"
 embedmodel = getconfig(config)["embedmodel"]
-mainmodel = getconfig(config)["mainmodel"]
+#mainmodel = getconfig(config)["mainmodel"]
 collectionname = "buildragwithpython"
 relative_path_db = getconfig(config)["dbpath"]
-
 # start ChromaDB
 chroma = chromadb.PersistentClient(path=relative_path_db)
-# Start embedding LLamafile model
+# load embedding mdl
 launch_llamafile(config=config)
 embedder = LlamafileEmbeddings()
+# load llm mdl
+mainmodel = launch_server_ollama(config=config)
+llm = Ollama(model=mainmodel, num_ctx=8000)
+# create retriever
 langchain_chroma = Chroma(
     client=chroma,
     collection_name=collectionname,
@@ -31,11 +36,9 @@ langchain_chroma = Chroma(
 )
 print("There are", langchain_chroma._collection.count(), "in the collection")
 
-
 query = "What did happen in Taiwan ?"
 
 results = langchain_chroma.similarity_search_with_score(query, k=5)
-
 
 relevantdocs = [doc[0].page_content for doc in results]
 context = "\n\n".join(relevantdocs)
@@ -57,8 +60,7 @@ for k, elem in enumerate(results):
 
 # Start Ollama model : actually, check if it exists or pull it and prepare it 
 # cf. config.ini
-mainmodel = launch_server_ollama(config=config)
-llm = Ollama(model=mainmodel, num_ctx=8000)
+
 stream = llm.stream(modelquery)
 
 print("RESPONSE : ")
