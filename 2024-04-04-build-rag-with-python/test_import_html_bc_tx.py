@@ -1,6 +1,6 @@
 """
 Global example of parsing HTML to extract information.
-here we use ChromaDB + Llamafile + Langchain
+here we use ChromaDB + Ollama (emb + LLM chat) + Langchain
 - We have a report from polygonscan about a blockchain transaction 
    - multi wallet from / to 
    - multi tokens are distributed
@@ -14,7 +14,8 @@ here we use ChromaDB + Llamafile + Langchain
 - Used different methods to import an HTML file
 
 """
-import os, time
+import os
+import time
 from langchain_community.document_loaders import WebBaseLoader
 from utilities import getconfig
 from langchain.chains import create_retrieval_chain
@@ -27,47 +28,46 @@ from langchain_text_splitters import (
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import PromptTemplate
 from langchain_community.llms import Ollama
+from langchain_community.embeddings import OllamaEmbeddings
 from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
-#from selenium.webdriver.common.by import By
-#from selenium.webdriver.support.wait import WebDriverWait
-#from selenium.webdriver.support import expected_conditions as EC
-#from dotenv import load_dotenv, find_dotenv
-#from langchain_community.document_loaders import UnstructuredHTMLLoader
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.wait import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
+# from dotenv import load_dotenv, find_dotenv
+# from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import chromadb
 from langchain_chroma import Chroma
-from langchain_community.embeddings import LlamafileEmbeddings
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field, validator
 from typing import List
 from libs.tools_ollama import launch_server_ollama
-from libs.tools_llamafile import launch_llamafile
 
 # definitions
-config = "emb-llamafile"
+config = "main"
+# Embedder: Ollama model
+embedmodel = getconfig(config)["embedmodel"]
+# LLM Ollama model : actually, check if it exists or pull it and prepare it
+mainmodel = launch_server_ollama(config=config)
 pathdata = getconfig(config)["pathdata"]
 relative_path_db = getconfig(config)["dbpath"]
 collectionname = "tx_test"
 url_test = "https://polygonscan.com/tx/0x99e3c197172b967eb4215249be50034a1696423a9ae805438ae217a501d86aa9"
-file_path_test = "content/file_test_polygonscan.html" # local download of remote  HTML file
-address_test = "0x8da02d597a2616e9ec0c82b2b8366b00d69da29a" # address of the wallet to scan
-# tokens to find
+file_path_test = "content/file_test_polygonscan.html"  # local download of remote  HTML file
+address_test = "0x8da02d597a2616e9ec0c82b2b8366b00d69da29a"  # address of the wallet to scan
+# tokens to find for this test
 dict_tokens_to_find = {
     "FOMO":  "0x44a6e0be76e1d9620a7f76588e4509fe4fa8e8c8",
-    "FUD": "0x403e967b044d4be25170310157cb1a4bf10bdd0f", 
+    "FUD": "0x403e967b044d4be25170310157cb1a4bf10bdd0f",
     "KEK": "0x42e5e06ef5b90fe15f853f59299fc96259209c5c",
     "ALPHA": "0x6a3E7C3c6EF65Ee26975b12293cA1AAD7e1dAeD2",
 }
 
-# Start Ollama model : actually, check if it exists or pull it and prepare it 
-# cf. config.ini
-mainmodel = launch_server_ollama(config=config)
-# Start embedding LLamafile model
-launch_llamafile(config=config)
 
+# Download DATA
 # Web text directly : NOK : html tag are missing so understanding is difficult (bs get_text is used)
 '''loader = WebBaseLoader(url_test)
 data = loader.load()
@@ -89,8 +89,6 @@ elements = partition_html(url=url_test)'''
 '''from langchain_community.document_loaders import SeleniumURLLoader
 loader = SeleniumURLLoader(urls=[url_test])
 docs = loader.load()'''
-
-
 # Download with BeautyfulSoup
 if not os.path.isdir(pathdata):
     os.mkdir(pathdata)
@@ -130,12 +128,17 @@ all_splits = text_splitter.split_documents(docs)
 
 
 # load it into Chroma if not already done
-# connect to Llamafile embedding
-embedder = LlamafileEmbeddings()
+# connect to Ollama embedding model
+embedder = OllamaEmbeddings(
+    model=embedmodel,
+    embed_instruction="",
+    query_instruction="Represent this sentence for searching relevant passages: ",
+)
 
 # Connect to VectorStore
-#client = chromadb.HttpClient(host="localhost", port=8000) # TO SERVER (TEST 04 : 85s)
-client = chromadb.PersistentClient(path=relative_path_db) # TO LOCAL PERSISTENT DB (TEST 04 : 85s same result)
+# client = chromadb.HttpClient(host="localhost", port=8000) # TO SERVER (TEST 04 : 85s)
+# TO LOCAL PERSISTENT DB (TEST 04 : 85s same result)
+client = chromadb.PersistentClient(path=relative_path_db)
 
 if any(collection.name == collectionname for collection in client.list_collections()):
     print("docs already in collection")
@@ -151,20 +154,20 @@ vectorstore = Chroma(
 )
 
 if mode_add:
-    vectorstore.add_documents(all_splits) # VERY LONG ? 
+    vectorstore.add_documents(all_splits)  # VERY LONG ?
 # query it
-#query = "Which tokens were transfered in this transaction?"
-#query = "Which tokens are transfered from or to this address '0x8da02d597a2616e9ec0c82b2b8366b00d69da29a'?"
-#query = "Find all tokens transfered to this address '0x8da02D59...0d69da29A'. Outputs only the name and address of these tokens and nothing else."
-#query = "Find tokens, their names and adresses, that were exchanged with this wallet '0x8da02D59...0d69da29A' without the receiver or destination wallet addresses."
-#query = "Find tokens, their names and adresses, that were exchanged with this wallet '0x8da02d597a2616e9ec0c82b2b8366b00d69da29a' without the receiver or destination wallet addresses."
+# query = "Which tokens were transfered in this transaction?"
+# query = "Which tokens are transfered from or to this address '0x8da02d597a2616e9ec0c82b2b8366b00d69da29a'?"
+# query = "Find all tokens transfered to this address '0x8da02D59...0d69da29A'. Outputs only the name and address of these tokens and nothing else."
+# query = "Find tokens, their names and adresses, that were exchanged with this wallet '0x8da02D59...0d69da29A' without the receiver or destination wallet addresses."
+# query = "Find tokens, their names and adresses, that were exchanged with this wallet '0x8da02d597a2616e9ec0c82b2b8366b00d69da29a' without the receiver or destination wallet addresses."
 query = f"Find tokens, their symbols and adresses, that were exchanged with this wallet '{address_test}' without the receiver or destination wallet addresses."
 
 search_kwargs = {
     "k": 10,
     "where_document": {"$contains": address_test[:10]},
 }
-retriever = vectorstore.as_retriever(search_kwargs=search_kwargs) # only 10 docs
+retriever = vectorstore.as_retriever(search_kwargs=search_kwargs)  # only 10 docs
 # LLM model
 llm = Ollama(model=mainmodel, num_ctx=8000)
 
@@ -210,9 +213,9 @@ context_ref = results_old["context"][-5].page_content
 
 for token, address_token in dict_tokens_to_find.items():
     if context_ref.find(token) != -1:
-        print("FOUND TOKEN : ", token )
+        print("FOUND TOKEN : ", token)
         if context_ref.find(address_token) != -1:
-            print("FOUND ADDRESS : ", address_token )
+            print("FOUND ADDRESS : ", address_token)
             example = f"``` {context_ref} ```"
             output_example = """
             ```json
@@ -227,10 +230,13 @@ for token, address_token in dict_tokens_to_find.items():
 # try to extract for all tx found in all context
 
 # Define your desired data structure.
+
+
 class TokenData(BaseModel):
     symbol: str = Field(description="symbol of the token found")
     address: str = Field(description="address of the token found")
     # You can add custom validation logic easily with Pydantic.
+
     @validator("address")
     def address_start_with_0x(cls, field):
         """Check address format"""
@@ -238,8 +244,10 @@ class TokenData(BaseModel):
             raise ValueError("Badly formed address!")
         return field
 
+
 class ListTokenData(BaseModel):
     tokens: List[TokenData] = Field(description="list of tokens found")
+
 
 # Set up a parser + inject instructions into the prompt template.
 # prompt without example
@@ -256,10 +264,11 @@ prompt_2 = PromptTemplate(
         <question>
          {query}
          Don't take wallet address of sender (From) or of receiver (To), but only token address.
-         A ticker symbol of a token is composed of 3 to 5 characters and use exclusively capital letters of the Latin alphabet (A-Z).
+         A symbol of a token is composed of 3 to 5 characters and use exclusively capital letters of the Latin alphabet (A-Z).
          An address of a token is composed of 42 characters and start with 0x
          A token have only one address, so output only one address per token.
-         As answer, for each token found, can you give his ticker symbol and his address. 
+         As answer, for each token found, can you give his symbol and his address.
+         Use only this context to answer.
          Do not explain how you have done.
         </question>
         """,
@@ -303,8 +312,8 @@ dict_param_prompt_2 = {
     "query": query,
 }'''
 # And a query intended to prompt a language model to populate the data structure.
-#prompt_and_model = prompt_ex | llm
-#output = prompt_and_model.invoke(dict_param_prompt_ex)
+# prompt_and_model = prompt_ex | llm
+# output = prompt_and_model.invoke(dict_param_prompt_ex)
 
 prompt_and_model = prompt_2 | llm
 output = prompt_and_model.invoke(dict_param_prompt_2)
@@ -313,10 +322,10 @@ res = parser.invoke(output)
 print("\nAnswer parsed : \n")
 print(res)
 
-#res = llm.invoke(prompt.invoke({"context": results_old["context"][-1].page_content, "input": query}))
-#print(res)
+# res = llm.invoke(prompt.invoke({"context": results_old["context"][-1].page_content, "input": query}))
+# print(res)
 # try several docs in context :
-#print(llm.invoke(prompt.invoke({"context": results_old["context"][-3].page_content+results_old["context"][-2].page_content+results_old["context"][-1].page_content , "input": query})))
+# print(llm.invoke(prompt.invoke({"context": results_old["context"][-3].page_content+results_old["context"][-2].page_content+results_old["context"][-1].page_content , "input": query})))
 print("\nTEST 3 END")
 
 # TEST 4 : With output format on all context found : json
@@ -358,7 +367,7 @@ print(dict_token_found)
 print("\nTEST 4 END")
 
 # test with Unstructured
-#TODO
+# TODO
 '''print("Loading UnstructuredHTMLLoader")
 loader = UnstructuredHTMLLoader(
     file_path_test,

@@ -16,7 +16,7 @@ embedmodel = getconfig()["embedmodel"]
 path_file_list = 'sourcedocs.txt'
 pathdata = getconfig()["pathdata"]
 relative_path_db = getconfig()["dbpath"]
-# connect to Llamafile embedding
+# connect to embedding model : Ollama model here
 embedder = OllamaEmbeddings(
     model=embedmodel,
     embed_instruction="",
@@ -24,7 +24,7 @@ embedder = OllamaEmbeddings(
 )
 
 # connect to chroma
-#chroma = chromadb.HttpClient(host="localhost", port=8000)
+# chroma = chromadb.HttpClient(host="localhost", port=8000)
 chroma = chromadb.PersistentClient(path=relative_path_db)
 print(chroma.list_collections())
 # prepare collection : delete if exist to rebluid it
@@ -45,7 +45,7 @@ loader = CustomDocumentLoader(path_file_list)
 docs = loader.load()
 
 # split text
-#text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=0)
+# text_splitter = RecursiveCharacterTextSplitter(chunk_size=600, chunk_overlap=0)
 text_splitter = RecursiveCharacterTextSplitter.from_language(
     language=Language.HTML, chunk_size=1000, chunk_overlap=0
 )
