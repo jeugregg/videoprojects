@@ -16,11 +16,12 @@ here we use ChromaDB + Ollama (emb + LLM chat) + Langchain
 """
 import os
 import time
-from langchain_community.document_loaders import WebBaseLoader
 from utilities import getconfig
+from transformers import GPT2Tokenizer
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.document_loaders import TextLoader
+# from langchain_community.document_transformers import DocumentTransformer
 from langchain_text_splitters import (
     Language,
     RecursiveCharacterTextSplitter,
@@ -29,6 +30,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import PromptTemplate
 from langchain_community.llms import Ollama
 from langchain_community.embeddings import OllamaEmbeddings
+
 from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
@@ -47,6 +49,7 @@ from typing import List
 from libs.tools_ollama import launch_server_ollama
 
 # definitions
+MODE_UPDATE_DB = True  # True : Always re-construct vector store for RAG
 config = "main"
 # Embedder: Ollama model
 embedmodel = getconfig(config)["embedmodel"]
@@ -66,6 +69,15 @@ dict_tokens_to_find = {
     "ALPHA": "0x6a3E7C3c6EF65Ee26975b12293cA1AAD7e1dAeD2",
 }
 
+
+'''class FiltreDocumentTransformer(DocumentTransformer):
+    def __init__(self, recherche):
+        super().__init__()
+        self.recherche = recherche
+
+    def transform_documents(self, documents, **kwargs):
+        return [doc for doc in documents if self.recherche in doc.page_content]
+'''
 
 # Download DATA
 # Web text directly : NOK : html tag are missing so understanding is difficult (bs get_text is used)
@@ -124,8 +136,18 @@ docs = loader.load()
 text_splitter = RecursiveCharacterTextSplitter.from_language(
     language=Language.HTML, chunk_size=2500, chunk_overlap=0
 )
-all_splits = text_splitter.split_documents(docs)
+all_splits_raw = text_splitter.split_documents(docs)
 
+# Filter only chuncks with address test
+# filter_transformer = FiltreDocumentTransformer(address_test)
+# all_splits = filter_transformer.transform_documents(all_splits)
+all_splits = [doc for doc in all_splits_raw if address_test in doc.page_content]
+nb_char = len(all_splits[5].page_content)
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+tokens = tokenizer.encode(all_splits[5].page_content)
+nb_tokens = len(tokens)
+print(f"Nb Characters per Context: {nb_char}")
+print(f"Nb Tokens per Context: {nb_tokens}")
 
 # load it into Chroma if not already done
 # connect to Ollama embedding model
@@ -146,6 +168,13 @@ if any(collection.name == collectionname for collection in client.list_collectio
 else:
     mode_add = True
 
+# force update DB ?
+if MODE_UPDATE_DB:
+    if not mode_add:
+        client.delete_collection(collectionname)
+        mode_add = True
+
+
 # langchain chroma connection
 vectorstore = Chroma(
     client=client,
@@ -154,7 +183,11 @@ vectorstore = Chroma(
 )
 
 if mode_add:
+    starttime = time.time()
+    print("Adding docs to vector store")
     vectorstore.add_documents(all_splits)  # VERY LONG ?
+    print("Done adding docs to vector store")
+    print("--- %s seconds ---" % (time.time() - starttime))
 # query it
 # query = "Which tokens were transfered in this transaction?"
 # query = "Which tokens are transfered from or to this address '0x8da02d597a2616e9ec0c82b2b8366b00d69da29a'?"
@@ -164,12 +197,12 @@ if mode_add:
 query = f"Find tokens, their symbols and adresses, that were exchanged with this wallet '{address_test}' without the receiver or destination wallet addresses."
 
 search_kwargs = {
-    "k": 10,
+    "k": 23,
     "where_document": {"$contains": address_test[:10]},
 }
 retriever = vectorstore.as_retriever(search_kwargs=search_kwargs)  # only 10 docs
 # LLM model
-llm = Ollama(model=mainmodel, num_ctx=8000)
+llm = Ollama(model=mainmodel, num_ctx=4092)
 
 
 # TEST 0 :  try to extract FUD, FOMO, KEK, ALPHA from the context
@@ -186,7 +219,7 @@ prompt = ChatPromptTemplate.from_template(
 )
 # Stuff all relevant docs (10 in this case)
 document_chain = create_stuff_documents_chain(llm, prompt)
-# Add to the retriever to have the complet chain
+# Add to the retriever to have the complete chain
 retrieval_chain = create_retrieval_chain(retriever, document_chain)
 # REPONSE TEST :
 results = retrieval_chain.invoke({"input": query})
@@ -233,6 +266,7 @@ for token, address_token in dict_tokens_to_find.items():
 
 
 class TokenData(BaseModel):
+    token_name: str = Field(description="name of the token found")
     symbol: str = Field(description="symbol of the token found")
     address: str = Field(description="address of the token found")
     # You can add custom validation logic easily with Pydantic.
@@ -329,7 +363,7 @@ print(res)
 print("\nTEST 3 END")
 
 # TEST 4 : With output format on all context found : json
-print("\nTEST 4 : With output format on all context found and an example : \n")
+print("\nTEST 4 : With output format on all docs and without example : \n")
 starttime = time.time()
 '''class DictToken(dict):
     """
@@ -346,7 +380,7 @@ starttime = time.time()
 # declaration
 dict_token_found = {}
 # loop over contexts
-for k, doc in enumerate(results["context"]):
+for k, doc in enumerate(all_splits):
     print('\nContext n# ', k)
     # find token symbol and address
     dict_param_prompt_2["context"] = doc.page_content
@@ -363,8 +397,19 @@ for k, doc in enumerate(results["context"]):
         print("2-NO MORE token found ?")
 print("--- %s seconds ---" % (time.time() - starttime))
 print(dict_token_found)
+ok = 0
+for symbol, expected_value in dict_tokens_to_find.items():
+    if symbol in dict_token_found:
+        if dict_token_found[symbol] == expected_value.lower():
+            print(symbol, " : ", dict_token_found[symbol], " OK!")
+            ok += 1
+if ok == len(dict_tokens_to_find):
+    print("TEST 4 OK")
+else:
+    print("TEST 4 NOK!")
 
 print("\nTEST 4 END")
+
 
 # test with Unstructured
 # TODO
